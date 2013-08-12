@@ -2,9 +2,16 @@
 *
 *  MMCast.h - generic cast expressions
 *
-*  (C) 2003 Marcel Mueller, Fulda, Germany
+*  (C) 2003-2006 Marcel Mueller, Fulda, Germany
 *
-*  Freeware
+*  Licence: LGPL
+*
+*  Bugs:
+*  - There is a known problem that cast expressions do no longer preserve the
+*    compile-time constant attribute. E.g.:
+*      static const int i = static_cast<unsigned char>(-1);
+*    is no longer valid. C-style casts are not affected.
+*    The automatic redirecting is only enabled if you define MM_CAST_REDIRECT.
 *
 ****************************************************************************/
 
@@ -13,6 +20,7 @@
 #define MMCast_h
 
 
+namespace MM {
 
 /*****************************************************************************
 *
@@ -55,9 +63,11 @@ inline D MM_const_cast(S s)
 {  return MM_cast_traits<D,S>::do_const_cast(s);
 }
 
-#define static_cast ::MM_static_cast
-#define dynamic_cast ::MM_dynamic_cast
-#define const_cast ::MM_const_cast
+#ifdef MM_CAST_REDIRECT
+#define static_cast ::MM::MM_static_cast
+#define dynamic_cast ::MM::MM_dynamic_cast
+#define const_cast ::MM::MM_const_cast
+#endif
 
 
 /*****************************************************************************
@@ -66,5 +76,6 @@ inline D MM_const_cast(S s)
 *
 *****************************************************************************/
 
+} // namespace
 
 #endif

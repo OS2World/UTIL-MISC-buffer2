@@ -38,7 +38,7 @@ Event::~Event()
 {  CloseHandle(Handle);
 }
 
-bool Event::Wait(int ms)
+bool Event::Wait(long ms)
 {  return WaitForSingleObject(Handle, ms) == WAIT_OBJECT_0; // The mapping from ms == -1 to INFINITE is implicitely OK.
 }
 
@@ -87,7 +87,7 @@ Event::~Event()
 {  DosCloseEventSem(Handle); // can't handle errors here
 }
 
-bool Event::Wait(int ms)
+bool Event::Wait(long ms)
 {  APIRET rc = DosWaitEventSem(Handle, ms); // The mapping from ms == -1 to INFINITE is implicitely OK.
    switch (rc)
    {case 0:
@@ -122,8 +122,37 @@ void Event::Reset()
 
 #else
 
-#error unsupported platform
+// use pthreads
+Event::Event() : State(false)
+{	pthread_cond_init(&Handle, NULL);
+}
 
+Event::~Event()
+{	pthread_cond_destroy(&Handle);
+}
+
+bool Event::Wait(long ms)
+{	if (State) // fast double check
+		return true;
+	Lock lck(*this);
+	while (!State)
+		if (!Notification::Wait(ms))
+			return false;
+	return true;
+}
+
+void Event::Set()
+{	if (State) // fast double check
+		return;
+	Lock lck(*this);
+	State = true;
+	NotifyAll();
+}
+
+void Event::Reset()
+{	Lock lck(*this);
+	State = false;
+}
 #endif
 
 }} // end namespace

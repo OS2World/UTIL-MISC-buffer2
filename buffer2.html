@@ -1,145 +1,83 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
+<html><head>
+<meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type"><title>High performance FIFO</title>
 
-  <meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type">
-  <title>High performance FIFO</title>
-
-
-  <meta content="Marcel M&uuml;ller" name="author">
-
+<meta content="Marcel M&uuml;ller" name="author">
 </head>
 
-
 <body>
-
-<h1>High prformance FIFO buffer
-for OS/2<br>
-
-</h1>
-
-<p>Release: 0.11</p>
-
-<a href="#preface">preface</a>
-<a href="#usage">usage</a>
-<a href="#download">download</a>
-<a href="#history">history</a>
-<a href="#todo">todo</a>
-<a href="#contact">contact</a>
+<h1>High performance FIFO buffer</h1>
+<p>Release: 0.13</p>
+<a href="#preface">&rarr;&nbsp;preface</a>
+<a href="#usage">&rarr;&nbsp;usage</a>
+<a href="#download">&rarr;&nbsp;download</a>
+<a href="#history">&rarr;&nbsp;history</a>
+<a href="#todo">&rarr;&nbsp;todo</a>
+<a href="#contact">&rarr;&nbsp;contact</a>
 <hr>
 <h3><a name="preface"></a>Preface</h3>
-
 <p> This utility is designed to
 buffer data during real time processing like on the fly audio encoding
 or tape backups. It is optimized for high
 throughput, fast and reliable response and low CPU load. The data is
 not copied
-around in memory. See <a href="#examples">examples</a>
+around in memory. It is not even touched. See <a href="#examples">examples</a>
 for more details.<br>
-
 </p>
-
-<p>Examples:</p>
-
-<ul>
-
-  <li>Record an audio stream and
-encode it on the fly. To avoid any interrupt in the audio stream the
-encoder process must run at reasonable high priority and must not stop
-becaus of a high I/O load or something like that. Here <tt>buffer2</tt>
-comes
-into play. With a data buffer of a few minutes capacity this can be
-relaxed significantly.<br>
-
-  </li>
-
-  <li>Make a backup of a
-workstation with tar or something like that over the network to a DLT
-drive or anothe media which requires a high sustained data rate.</li>
-
-</ul>
-
 <hr>
 <h3><a name="usage"></a>Usage</h3>
-
-<h4>Reqirements</h4>
-
-<blockquote>The C runtime
-(<tt>libc06.dll</tt>)
-which can be downloaded from <a href="www.netlabs.org">Netlabs</a>
-by <a href="ftp://ftp.netlabs.org/pub/gcc/libc-0.6.0-ga2.zip">ftp</a>.<br>
-
+<h4>Requirements</h4>
+<blockquote>OS/2 binary: The C runtime
+(<tt>libc061.dll</tt>)
+which can be downloaded from <a href="http://www.netlabs.org">Netlabs</a>
+by <a href="ftp://ftp.netlabs.org/pub/gcc/libc-0.6.1-csd1.zip">ftp</a>.<br>
 </blockquote>
-
 <h4>Installation</h4>
-
-<blockquote> Copy the script
-somewhere to your path.<kbd></kbd>
-</blockquote>
-
+<blockquote>Copy the executable somewhere to your path.</blockquote>
 <h4>Parameters</h4>
-
 <blockquote>
-  <p> <kbd>buffer2 <var>source destination</var>
-[<var>options</var>]</kbd> </p>
-
-  <dl>
-
-  </dl>
-
-  <kbd><var>source</var></kbd>, <kbd><var>destination</var></kbd>
+<p> <kbd>buffer2 <var>source destination</var>
+</kbd>[<kbd><var>options</var></kbd>]</p>
+<dl>
+</dl>
+<kbd><var>source</var></kbd>, <kbd><var>destination</var></kbd>
 must be one of the following:
-  <dl>
-
-  </dl>
-
-  <ul>
-
-    <li>An absolute or relative or
+<dl>
+</dl>
+<ul>
+<li>An absolute or relative or
 UNC path to a file.</li>
-
-    <li>A local or remote name of
+<li>OS/2: A local or remote name of
 an existing or non-existing named pipe. In case the pipe does not exist
-ist is created and connected exactly once.</li>
-
-    <li>A <kbd>-</kbd>
+it is created and connected exactly once.</li>
+<li>A TCP/IP port following the syntax <kbd>tcpip://</kbd>[<kbd><var>hostname</var></kbd>]<kbd>:<var>port</var></kbd>.
+Without a host name the port is turned into listening state on the local
+machine with bind address 0.0.0.0 and exactly one connection is
+accepted.</li>
+<li>A device name like <kbd>com1:</kbd> or <kbd>/dev/tape</kbd>.</li>
+<li>A <kbd>-</kbd>
 (dash) meaning <tt>stdin</tt>
 or <tt>stdout</tt>
 respectively.<br>
-
-    </li>
-
-  </ul>
-
-  <dl>
-
-  </dl>
-
+</li>
+</ul>
+<dl>
+</dl>
 </blockquote>
-
 <h4>Options</h4>
-
 <blockquote>
-  <p>
-  <table border="0" cellpadding="3" cellspacing="0">
-
-    <tbody>
-
-      <tr valign="bottom">
-
-        <td>Command line
-        <hr size="1"> </td>
-
-        <td>Description
-        <hr size="1"> </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/b=<var>size</var></kbd></td>
-
-        <td valign="top">Set
+<p>
+<table border="0" cellpadding="3" cellspacing="0">
+<tbody>
+<tr valign="bottom">
+<td>Command line
+<hr size="1"> </td>
+<td>Description
+<hr size="1"> </td>
+</tr>
+<tr>
+<td valign="top"><kbd>-b=<var>size</var></kbd></td>
+<td valign="top">Set
 the size of the FIFO-Buffer. <kbd><var>size</var></kbd>
 may be followed by <kbd>k</kbd>, <kbd>M</kbd>
 or <kbd>G</kbd>
@@ -149,30 +87,21 @@ or 1024<sup>3</sup>
 bytes. It is strongly recommended to use a multiple of 1kiB as buffer
 size. Otherwise the performance may degrade significantly. By default
 the buffer size is 64kiB.<br>
-
-        </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/p=<var>size</var></kbd></td>
-
-        <td valign="top">Set
+</td>
+</tr>
+<tr>
+<td valign="top"><kbd>-p=<var>size</var></kbd></td>
+<td valign="top">Set
 the size of the Pipe-Buffer if a pipe is created by <tt>buffer2</tt>.
-        <kbd><var>size</var></kbd>
+<kbd><var>size</var></kbd>
 may be followed by <kbd>k</kbd>
 to give the size in kiB, i.e. 1024 bytes. Note that the pipe buffer
 must not exceed 64kiB. This is a limitation of OS/2. By default the
 pipe buffer size is 8kiB.</td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/r=<var>size</var></kbd></td>
-
-        <td valign="top">Maximum
+</tr>
+<tr>
+<td valign="top"><kbd>-r=<var>size</var></kbd></td>
+<td valign="top">Maximum
 request size. <kbd><var>size</var></kbd>
 may be followed by <kbd>k</kbd>, <kbd>M</kbd>
 or <kbd>G</kbd>
@@ -187,17 +116,13 @@ buffer size to avoid fragmentation. Furthermore the request size should
 not be larger than half of the buffer size. Otherwise the buffer
 becomes very ineffective because large parts of the buffer may be
 blocked by either the input or the output side. </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/h=<var>level</var></kbd></td>
-
-        <td valign="top">High
+</tr>
+<tr>
+<td valign="top"><kbd>-h=<var>level</var></kbd></td>
+<td valign="top">High
 water mark. Once the buffer gets empty the output side of the buffer
 will stop working until the buffer is filled up to the high water mark.
-        <kbd><var>level</var></kbd>
+<kbd><var>level</var></kbd>
 may be followed by <kbd>k</kbd>, <kbd>M</kbd>
 or <kbd>G</kbd>
 to give the high water mark in kiB, MiB or GiB, i.e. 1024<sup>1</sup>,
@@ -208,22 +133,16 @@ is followed by <kbd>%</kbd>
 it counts relative to the buffer size in percent. The default value is
 zero. That causes the output side to resume as soon as any data is
 available.<br>
-
 This parameter may be used to defragment streaming data in pipes or to
 avoid unnecessary stops of tape drives or CD writers. In the latter
 cases a value of <kbd>100%</kbd>
 may be reasonable. This causes nothing to be written until the buffer
 is full (or the end of the input stream is reached, of course).<br>
-
-        </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/l=<var>level</var></kbd></td>
-
-        <td valign="top">Low
+</td>
+</tr>
+<tr>
+<td valign="top"><kbd>-l=<var>level</var></kbd></td>
+<td valign="top">Low
 water mark. This is the opposite of the high water mark. Once the
 buffer gets full it will not resume to fill the buffer before the
 buffer level drops below the low water mark. <kbd><var>level</var></kbd>
@@ -237,155 +156,118 @@ is followed by <kbd>%</kbd>
 it counts relative to the buffer size in percent. The default value is <kbd>100%</kbd>.
 This causes the input operation to resume as soon as there is any space
 in the buffer.<br>
-
-        </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/c</kbd></td>
-
-        <td valign="top">Enable
+</td>
+</tr>
+<tr>
+<td valign="top"><kbd>-c</kbd></td>
+<td valign="top">Enable
 file system caching (if source or destination is an ordinary file).
 This may or may not increase the throughput. Normally it is no good
 choice to use the file system's cache here, because the FIFO is in fact
 a kind of cache. Generally this will only increase the load on the CPU
 to memory interface.<br>
-
-        </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/si</kbd></td>
-
-        <td valign="top">Print
+</td>
+</tr>
+<tr>
+<td valign="top"><kbd>-si</kbd></td>
+<td valign="top">Print
 statistics from the input side of the FIFO to stderr. This option is
 for diagnostic purposes. Using it may stop the FIFO from spooling data,
 because the print functions may block, e.g. if one hits the "pause" key.<br>
-
-        </td>
-
-      </tr>
-
-      <tr>
-
-        <td valign="top"><kbd>/so</kbd></td>
-
-        <td valign="top">Print
+</td>
+</tr>
+<tr>
+<td valign="top"><kbd>-so</kbd></td>
+<td valign="top">Print
 statistics from the output side of the FIFO to stderr. This option
 is for diagnostic purposes. Using it may stop the FIFO from spooling
 data, because the print functions may block, e.g. if one hits the
 "pause" key.</td>
-
-      </tr>
-
-    </tbody>
-  </table>
-
-  </p>
-
+</tr>
+</tbody>
+</table>
+</p>
 </blockquote>
-
 <h4><a name="examples"></a>Examples</h4>
-
 <ul>
-
 </ul>
-
 <blockquote>
-  <dl>
-
-    <dt><kbd>playrec /r con | sp f4 o buffer2&nbsp;<var></var>-
+<dl>
+<dt><kbd>playrec /r con | sp f4 o buffer2&nbsp;<var></var>-
 -&nbsp;/b=64M /h=32k |&nbsp;toolame - -b 320 -m s -x "<var>filename.mp2</var>"</kbd></dt>
-
-    <dd>
-      <p>Record an audio stream and
+<dd>
+<p>Record an audio stream and
 encode it on the fly. To avoid any interrupt in the audio stream the
 encoder process must run at reasonable high priority and must not stop
-becaus of a high I/O load or something like that. Here <tt>buffer2</tt>
+because of a high I/O load or something like that. Here <tt>buffer2</tt>
 comes
 into play. With a data buffer of a few minutes capacity this can be
-relaxed significantly. (<kbd>sp f4 o</kbd> increases the
+relaxed significantly and the encoder may run at normal priority level.
+(<kbd>sp f4 o</kbd> increases the
 priority)</p>
-
-    </dd>
-
-    <dt><kbd>machine1&gt;sp f4 o buffer2 /b=64M /b=60k
+</dd>
+<dt><kbd>machine1&gt;sp f4 o buffer2 /b=64M /b=60k
 /h=100% \\machine1\pipe\to_tape <var>tape_device</var><br>
-
 machine2&gt;tar c ... -f \\pipe\to_tape</kbd></dt>
-
-    <dd>
-      <p>Make a backup of a
+<dd>
+<p>Make a backup of a
 workstation with <tt>tar</tt> or something like that
 over the network to a DLT
 drive or another media which requires a high sustained data rate. The
 high water mark of 100% ensures that the tape will not stop before at
 least one buffer size of data is written - usually much more since the
 buffer will be still filled at the same time.</p>
-
-    </dd>
-
-  </dl>
-
+</dd>
+</dl>
 </blockquote>
-
 <hr>
 <h3><a name="download"></a><font color="#ff0000">Download</font></h3>
-
 This utility is freeware.
-<p> ZIP file with the REXX and
-Perl version and this guide: <a href="buffer2.zip">Release&nbsp;0.11</a></p>
-
+<p> ZIP file with the source, an OS/2 executable and this guide: <a href="buffer2.zip">Release&nbsp;0.13</a></p>
 <hr>
 <h3><a name="history">History</a></h3>
-
+<b>Version
+0.13</b> (27.06.2006)
+<ul>
+<li>Unix port (posix).</li>
+<li>Minor bug fixes.</li>
+</ul>
+<b>Version
+0.12</b> (22.02.2006)
+<ul>
+<li>Added TCP/IP support.</li>
+</ul>
 <b>Version
 0.11</b> (16.01.2006)
 <ul>
-
-  <li>Fixed command line parser. V0.1 accidentliy had invalid old
+<li>Fixed command line parser. V0.1 accidentally had invalid old
 source code.</li>
-
-  <li>Changed SimpleDraain interface. (Currently unused code.)</li>
-
+<li>Changed SimpleDrain interface. (Currently unused code.)</li>
 </ul>
-
 <b>Version
 0.1</b> (11.01.2006)
 <ul>
-
-  <li>first
+<li>first
 release</li>
-
 </ul>
-
 <hr>
-<h3><a name="todo"></a>ToDo</h3>
-
+<h3><a name="todo"></a>ToDo, known issues</h3>
 <dl>
-
-  <dt><strong>Add 64 bit support</strong></dt>
-
-  <dd>When writing from or to files there is a 2GB limit, because
+<dt><strong>Add 64 bit support</strong></dt>
+<dd>When writing from or to files there is a 2GB limit, because
 buffer2 does not support the 64 bit file API.</dd>
-
+<dt><strong>Hang if the data source is a listening TCP/IP
+port or a listening pipe and the destination fails to initialize</strong></dt>
+<dd>When the output fails to open and the input is not yet
+connected the input thread does not receive the termination signal.</dd>
 </dl>
-
 <hr>
 <h3><a name="contact">Contact</a></h3>
-
 <p>Suggestions, help, complaints
 (but not
 too much:-): <img src="m.png" alt="Mail address: mueller (at) maazl (dot) de" align="middle" height="14" width="131">
 </p>
-
 <p>Original homepage: <a href="http://www.maazl.de/project/misc/buffer2.html">http://www.maazl.de/project/misc/buffer2.html</a>
 </p>
-
 <hr>
-</body>
-</html>
+</body></html>

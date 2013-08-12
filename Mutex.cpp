@@ -9,6 +9,7 @@
 
 
 #include "MMUtil+.h"
+#include <errno.h>
 #include <stdexcept>
 using namespace std;
 
@@ -41,7 +42,7 @@ Mutex::~Mutex()
 {  CloseHandle(Handle);
 }
 
-bool Mutex::Wait(int ms)
+bool Mutex::Request(long ms)
 {  return WaitForSingleObject(Handle, ms) == WAIT_OBJECT_0; // The mapping from ms == -1 to INFINITE is implicitely OK.
 }
 
@@ -57,7 +58,6 @@ bool Mutex::Release()
 *  Wrapper to WIN32 Mutex.
 *
 *****************************************************************************/
-//#include <os2.h> already in header
 
 Mutex::Mutex(bool share)
 {  APIRET rc = DosCreateMutexSem(NULL, &Handle, share * DC_SEM_SHARED, FALSE);
@@ -86,7 +86,7 @@ Mutex::~Mutex()
 {  DosCloseMutexSem(Handle);
 }
 
-bool Mutex::Wait(int ms)
+bool Mutex::Request(long ms)
 {  return DosRequestMutexSem(Handle, ms) == 0; // The mapping from ms == -1 to SEM_INDEFINITE_WAIT is implicitely OK.
 }
 
@@ -95,8 +95,45 @@ bool Mutex::Release()
 }
 
 #else
+// use pthreads
 
-#error unsupported platform
+Mutex::Mutex(bool share)
+{	// mutex attributes
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutexattr_setpshared(&attr, share ? PTHREAD_PROCESS_SHARED : PTHREAD_PROCESS_PRIVATE);
+	int rc = pthread_mutex_init(&Handle, &attr);
+	pthread_mutexattr_destroy(&attr);
+	if (rc != 0)
+		throw runtime_error("Cannot initialize Mutex object."); // can't help it, better than continue
+}
+
+Mutex::Mutex(const pthread_mutexattr_t* attr)
+{	// mutex attributes
+	int rc = pthread_mutex_init(&Handle, attr);
+	if (rc != 0)
+		throw runtime_error("Cannot initialize Mutex object."); // can't help it, better than continue
+}
+
+Mutex::~Mutex()
+{	pthread_mutex_destroy(&Handle);
+}
+
+bool Mutex::Request(long ms)
+{	int rc;
+	if (ms == -1)
+		rc = pthread_mutex_lock(&Handle);
+	 else
+	{	const struct timespec d = {ms / 1000, ms % 1000 * 1000000};
+		rc = pthread_mutex_timedlock(&Handle, &d);
+	}
+	return rc == 0;
+}
+
+bool Mutex::Release()
+{	return pthread_mutex_unlock(&Handle) == 0;
+}
 
 #endif
 

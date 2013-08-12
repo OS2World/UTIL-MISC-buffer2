@@ -32,7 +32,7 @@ FastMutex::~FastMutex()
 {  DeleteCriticalSection(&CS);
 }
 
-bool FastMutex::Wait(int) // timeouts are not supported
+bool FastMutex::Request(long) // timeouts are not supported
 {  EnterCriticalSection(&CS);
    return true;
 }
@@ -57,7 +57,7 @@ FastMutex::FastMutex()
 {  memset((void*)&CS, 0, sizeof CS);
 }
 
-bool FastMutex::Wait(int)
+bool FastMutex::Request(long)
 {  //fprintf(stderr, "FastMutex(%p)::Wait()\n", this);
    _smutex_request(&CS);
    return true;
@@ -70,9 +70,11 @@ bool FastMutex::Release()
 }
 
 #endif
-#else
 
-#error unsupported platform
+#else
+// use pthreads
+FastMutex::FastMutex() : Mutex((const pthread_mutexattr_t*)NULL)
+{}
 
 #endif
 

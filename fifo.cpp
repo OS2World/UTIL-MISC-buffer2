@@ -52,61 +52,80 @@ size_t SimpleSource::read(void* dst, size_t len)
 }
 
 // class StaticFIFO
+StaticFIFO::StaticFIFO(size_t buffersize, double highwater, double lowwater, int alignment)
+ : Buffer(buffersize + alignment)
+ , BufferBegin((char*)((((int)&*Buffer.begin())+alignment) & -alignment))
+ , BufferEnd(BufferBegin + buffersize)
+ , BufferSize(buffersize)
+ , LowWaterMark(Part2Bytes(lowwater))
+ , HighWaterMark(Part2Bytes(highwater))
+ , RdPos(BufferBegin)
+ , WrPos(BufferBegin)
+ , Level(0)
+ , RdReq(0)
+ , WrReq(0)
+ , EOS(false)
+ , Die(false)
+ , NotifyDrain(StateLock)
+ , NotifySource(StateLock)
+{}
+
 void StaticFIFO::RequestWrite(void*& data, size_t& len)
 {  if (WrReq != 0)
       throw std::logic_error("The StaticFIFO class does not support two buffer resquests without commit in between.");
+   Lock lc(StateLock);
    do
-   {  Lock(StateLock);
-      NotifyDrain.Reset();
-      if (EOS)
+   {  if (EOS)
       {  len = 0;
          return;
       }
-      size_t rem = Buffer.size() - Level;
+      size_t rem = BufferSize - Level;
       if (rem > 0)
       {  if (len > rem)
             len = rem;
-         rem = Buffer.end() - WrPos;
+         rem = BufferEnd - WrPos;
          if (len > rem)
             len = rem;
          data = &*WrPos;
          WrReq = len;
          return;
       }
+      ++Stat.FullCount;
    } while (NotifyDrain.Wait());
+   // error
+   len = 0;
 }
 
 void StaticFIFO::CommitWrite(void* data, size_t len)
-{  Lock(StateLock);
+{  Lock lc(StateLock);
    if (data != &*WrPos)
       throw std::logic_error("Cannot commit a buffer that is not requested before.");
    if (len > WrReq)
       throw std::logic_error("Cannot commit a larger buffer than requested.");
    WrReq = 0;
    WrPos += len;
-   if (WrPos == Buffer.end())
-      WrPos = Buffer.begin();
+   if (WrPos == BufferEnd)
+      WrPos = BufferBegin;
    if ((Level += len) >= HighWaterMark)
-      NotifySource.Set();
+      NotifySource.NotifyAll();
 }
 
 void StaticFIFO::EndWrite()
-{  //Lock(StateLock); implicitly atomic
+{  Lock lc(StateLock);
    EOS = true; // end of stream marker
    WrReq = 0; // cancel outstanding requests
-   NotifySource.Set(); // notify the other side regardless of the high water mark.
+   NotifySource.NotifyAll(); // notify the other side regardless of the high water mark.
 }
 
 void StaticFIFO::RequestRead(void*& data, size_t& len)
 {  if (RdReq != 0)
       throw std::logic_error("The StaticFIFO class does not support two buffer resquests without commit in between.");
+   Lock lc(StateLock);
    do
-   {  Lock(StateLock);
-      NotifySource.Reset();
-      if (Level > 0)
+   {  if (Level > 0)
       {  if (len > Level)
             len = Level;
-         size_t rem = Buffer.end() - RdPos;
+         size_t rem = BufferEnd - RdPos;
          if (len > rem)
             len = rem;
          data = &*RdPos;
@@ -117,34 +136,37 @@ void StaticFIFO::RequestRead(void*& data, size_t& len)
       {  len = 0;
          return;
       }
+      ++Stat.EmptyCount;
    } while (NotifySource.Wait());
+   // error
+   len = 0;
 }
 
 void StaticFIFO::CommitRead(void* data, size_t len)
-{  Lock(StateLock);
+{  Lock lc(StateLock);
    if (data != &*RdPos)
       throw std::logic_error("Cannot commit a buffer that is not requested before.");
    if (len > RdReq)
       throw std::logic_error("Cannot commit a larger buffer than requested.");
    RdReq = 0;
    RdPos += len;
-   if (RdPos == Buffer.end())
-      RdPos = Buffer.begin();
+   if (RdPos == BufferEnd)
+      RdPos = BufferBegin;
    if ((Level -= len) <= LowWaterMark)
-      NotifyDrain.Set();
+      NotifyDrain.NotifyAll();
 }
 
 void StaticFIFO::EndRead()
-{  //Lock(StateLock); implicitly atomic
+{  Lock lc(StateLock);
    EOS = true; // end of stream marker
    RdReq = 0; // cancel outstanding requests
-   NotifyDrain.Set(); // notify the other side regardless of the low water mark.
+   NotifyDrain.NotifyAll(); // notify the other side regardless of the low water mark.
 }
 
 size_t StaticFIFO::Part2Bytes(double part)
 {  if (part < 0.0 || part > 1.0)
       throw std::invalid_argument("The fractional part of the fifo buffer is not in the range [0,1]."); 
-   return (size_t)(Buffer.size() * part +.5); // rounding is still a dark chapther of the C language
+   return (size_t)(BufferSize * part +.5); // rounding is still a dark chapther of the C language
 }
 
 }} // end namespace

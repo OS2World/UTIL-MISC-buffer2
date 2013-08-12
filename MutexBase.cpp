@@ -13,15 +13,17 @@
 namespace MM {
 namespace IPC {
 
-MutexBase::Lock::Lock(int ms)
+#if defined(_WIN32) || defined(__OS2__)
+MutexBase::Lock::Lock(long ms)
  : CS(&Interlock::Instance)
- , Own(Interlock::Instance.Wait(ms))
+ , Own(Interlock::Instance.Request(ms))
 {}
+#endif
 
-bool MutexBase::Lock::Wait(int ms)
+bool MutexBase::Lock::Request(long ms)
 {  if (Own)
       return true;
-   return Own = CS->Wait(ms);
+   return Own = CS->Request(ms);
 }
 
 bool MutexBase::Lock::Release()
@@ -31,8 +33,6 @@ bool MutexBase::Lock::Release()
    return CS->Release();
 }
 
-
-Interlock Interlock::Instance; // singleton
 
 
 #if defined(_WIN32)
@@ -49,7 +49,7 @@ Interlock Interlock::Instance; // singleton
 static volatile LONG CSset = 0;
 static int CSLastPriority;
 
-bool Interlock::Wait(int) // the wait parameter does not make any sense here
+bool Interlock::Request(long) // the wait parameter does not make any sense here
 {  if (InterlockedIncrement(&CSset) == 1)
    {  CSLastPriority = GetThreadPriority();
       SetThreadPriority(THREAD_PRIORITY_TIME_CRITICAL);
@@ -65,6 +65,8 @@ bool Interlock::Release()
    return true;
 }
 
+Interlock Interlock::Instance; // singleton
+
 #elif defined(__OS2__)
 
 /*****************************************************************************
@@ -75,7 +77,7 @@ bool Interlock::Release()
 *****************************************************************************/
 //#include <os2.h> already in header
 
-bool Interlock::Wait(int) // the wait parameter does not make any sense here
+bool Interlock::Request(long) // the wait parameter does not make any sense here
 {  return DosEnterCritSec() == 0;
 }
 
@@ -83,9 +85,11 @@ bool Interlock::Release()
 {  return DosExitCritSec() == 0;
 }
 
+Interlock Interlock::Instance; // singleton
+
 #else
 
-#error unsupported platform
+// TODO: unsupported
 
 #endif
 

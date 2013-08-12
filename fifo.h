@@ -111,7 +111,12 @@ struct Source
 
 // Basic administrative interface
 struct FIFO
-{  // Get the drain interface of the fifo (where the data is stored).
+{	struct Statistics
+	{	unsigned EmptyCount;
+   	unsigned FullCount;
+   	Statistics() : EmptyCount(0), FullCount(0) {}
+   };
+   // Get the drain interface of the fifo (where the data is stored).
    // This function will return always the same instance for one fifo
    // instance. The instance may not be used by parallel threads.
    virtual Drain& getDrain() = 0;
@@ -119,6 +124,8 @@ struct FIFO
    // This function will return always the same instance for one fifo
    // instance. The instance may not be used by parallel threads.
    virtual Source& getSource() = 0;
+	// get STatistics for current FIFO.
+   virtual volatile const Statistics& getStatistics() const = 0;
 };
 
 // Helper class to implement write access to the FIFO by copying the data.
@@ -172,10 +179,13 @@ class StaticFIFO
  , private Source
 {private:   // internal quasi-constant objects
    typedef std::vector<char> BufferType;
-   typedef BufferType::iterator BufferIterator; 
+   typedef char* BufferIterator; 
    BufferType Buffer;
-   size_t LowWaterMark;
-   size_t HighWaterMark;
+   BufferIterator BufferBegin;
+   BufferIterator BufferEnd;
+   size_t BufferSize;
+   const size_t LowWaterMark;
+   const size_t HighWaterMark;
  private:   // internal state
    BufferIterator RdPos;  // current commited read position
    BufferIterator WrPos;  // current comitted write position
@@ -185,25 +195,15 @@ class StaticFIFO
    bool volatile EOS; // end of stream flag
    bool volatile Die; // destroy-flag
  private:   // internal semaphores
-   IPC::FastMutex StateLock;
-   IPC::Event NotifyDrain;
-   IPC::Event NotifySource;
+   IPC::Mutex StateLock;
+   IPC::Notification NotifyDrain;
+   IPC::Notification NotifySource;
+ private:   // statistics
+	Statistics Stat;
    
  public:    // public interface
    // Constructor for a static fifo of size buffersize. 
-   explicit StaticFIFO(size_t buffersize, double highwater = 0.0, double lowwater = 1.0)
-    : Buffer(buffersize)
-    , LowWaterMark(Part2Bytes(lowwater))
-    , HighWaterMark(Part2Bytes(highwater))
-    , RdPos(Buffer.begin())
-    , WrPos(Buffer.begin())
-    , Level(0)
-    , RdReq(0)
-    , WrReq(0)
-    , EOS(false)
-    , Die(false)
-   {}
-
+   explicit StaticFIFO(size_t buffersize, double highwater, double lowwater, int alignment);
    virtual ~StaticFIFO() { Die = true; }
    
    // @see FIFO::getDrain
@@ -215,6 +215,8 @@ class StaticFIFO
    {  return *this;
    }
 
+   virtual volatile const Statistics& getStatistics() const { return Stat; }
+    
  protected: // public interface implementations (indirect)
    void RequestWrite(void*& data, size_t& len);
    void CommitWrite(void* data, size_t len);

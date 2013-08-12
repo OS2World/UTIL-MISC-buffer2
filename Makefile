@@ -1,9 +1,10 @@
-MMUTILPATH = ../../MMUtil+
-EXE = .exe
+MMUTILPATH = ../MMUtil+
+#BOOSTPATH = -I/Sprachen/boost
+EXE = 
 O = .o
 
-CFLAGS = -I$(MMUTILPATH) -Wall
-LDFLAGS = -lstdc++ -Zcrtdll -Zomf -s
+CFLAGS = -I$(MMUTILPATH)/include $(BOOSTPATH) -Wall
+#LDFLAGS = -lstdc++ -s 
+LDFLAGS = -lstdc++ -s -lpthread -lrt
 
-buffer2$(EXE) : fifo.cpp buffer2.cpp $(MMUTILPATH)/FastMutex.cpp $(MMUTILPATH)/Mutex.cpp $(MMUTILPATH)/Event.cpp $(MMUTILPATH)/MutexBase.cpp $(MMUTILPATH)/string.cpp $(MMUTILPATH)/exception.cpp
-	gcc $(CFLAGS) -o $@ $+ $(LDFLAGS)
+-include Makefile.sub
